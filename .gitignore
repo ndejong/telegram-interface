@@ -1,0 +1,5 @@
+*.session
+*.json
+
+.idea
+venv
