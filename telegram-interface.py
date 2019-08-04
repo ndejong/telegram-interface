@@ -168,7 +168,6 @@ class TelegramInterface:
                     })
         return groups_list
 
-
     def connect_telegram(self):
         env = self.get_environment_variables()
 
