@@ -20,27 +20,39 @@ The following environment variables must be set with their associated values:-
 All output is JSON data-structures making it easier to chain with other tools such as `jq` for further parsing and 
 filtering if required.
 
-Log status messages are sent to stdout thus do not get in the way of tool chaining.
+Log status messages are sent to stderr and do not get in the way of pipe style tool chaining.
 
 #### Example: trivial output filtering using `jq`
 ```commandline
-telegram-interface.py -f +000000000000-20190804Z072817.json -g | jq .[].name 
+telegram-interface.py -g | jq .[].name 
 20190804Z085638 - Telegram Interface
-20190804Z085638 - Loading data file: +000000000000-20190804Z072817.json
+20190804Z085638 - Saving to data file: +000000000000-20190804Z072817.json
+20190804Z085638 - Connected to Telegram with api_id: 12345
 "Awesome Group A"
 "Another Group"
 "A Chat Forum"
+...
 ```
 
-#### Example: extracting from the saved data-file using `jq`
+#### Example: extract list of users as a csv using `jq`
 ```commandline
-cat +000000000000-20190804Z072817.json | jq '.chat_groups[].megagroup, .chat_groups[].title'
-true
-true
-null
-"Awesome Group A"
-"Another Group"
-"A Chat Forum"
+telegram-interface.py -f +000000000000-20190804Z072817.json -u | jq -r '(.[0] | keys_unsorted) as $keys | $keys, map([.[ $keys[] ]])[] | @csv'
+20190804Z145459 - Telegram Interface
+20190804Z145459 - Loading data file: +000000000000-20190804Z072817.json
+"id","username","firstname","lastname"
+123456789,"awesomeuser","Awesome","User"
+234567878,"someotheruser","Some","Other User"
+236423423,"givemeuser","Give","Me"
+...
+```
+
+#### Example: extracting the megagroup field directly from saved data using `jq` and a `tr` hack
+```commandline
+cat +000000000000-20190804Z072817.json | jq '.chat_groups[]| "\(.id)~,~\(.title)~,~\(.megagroup)"' | tr '~' '"'
+"183982374","Awesome Group A","true"
+"198123123","Another Group","null"
+"1734975345","A Chat Forum","true"
+...
 ```
 
 ### Usage
