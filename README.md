@@ -1,7 +1,7 @@
 # Telegram Interface
 
-A quick tool for listing out the Telegram Messenger groups your user-account is invited into and
-the users within each.
+A quick tool for listing the Telegram Messenger groups that a user-account is invited into and
+listing the users within groups.
 
 ### Github
 * [github.com/ndejong/telegram-interface](https://github.com/ndejong/telegram-interface)
