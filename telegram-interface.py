@@ -3,8 +3,10 @@
 import os
 import sys
 import json
+import copy
 import datetime
 import argparse
+from functools import reduce
 
 from telethon.sync import TelegramClient
 from telethon.tl.types import InputPeerEmpty
@@ -25,7 +27,7 @@ class TelegramInterface:
     def __init__(self):
         parser = argparse.ArgumentParser(description=self.name)
 
-        parser.add_argument('-e', action='store_true', default=False,
+        parser.add_argument('-e', '--env', action='store_true', default=False,
                             help='Output the current environment variable values and exit.')
 
         parser.add_argument('-f', type=str, metavar='<filename>', default=None,
@@ -35,6 +37,9 @@ class TelegramInterface:
         parser.add_argument('-o', type=str, metavar='<filename>', default='-',
                             help='Output filename, by default to <stdout>')
 
+        parser.add_argument('-c', '--csv', action='store_true', default=False,
+                            help='Output in flattened CSV format')
+
         parser.add_argument('-g', action='store_true', default=False,
                             help='Output groups, can be used with -u to obtain users in groups')
 
@@ -42,14 +47,14 @@ class TelegramInterface:
                             help='Output users')
 
         self.args = parser.parse_args()
-        if self.args.e is False and self.args.g is False and self.args.u is False:
+        if self.args.env is False and self.args.g is False and self.args.u is False:
             parser.print_help()
             exit(1)
 
     def main(self):
         self.message_stderr(self.name, color='grey')
 
-        if self.args.e is True:
+        if self.args.env is True:
             self.output(self.get_environment_variables())
             return
 
@@ -99,11 +104,16 @@ class TelegramInterface:
         }
 
     def output(self, data):
+        if self.args.csv is True:
+            out = self.flatten_to_csv(data)
+        else:
+            out = json.dumps(data, indent=2)
+
         if self.args.o == '-':
-            print(json.dumps(data, indent=2))
+            print(out)
         else:
             with open(self.args.o, 'w') as f:
-                json.dump(data, f)
+                f.write(out)
             self.message_stderr('Output written to filename: {}'.format(self.args.o), color='grey')
 
     def message_stderr(self, message, timestamp=True, color='default', end='\n'):
@@ -201,7 +211,7 @@ class TelegramInterface:
         self.message_stderr('Connected to Telegram with api_id: {}'.format(api_id), color='grey')
         return True
 
-    def get_chat_groups(self, expansions=None, limit=1000):
+    def get_chat_groups(self, expansions=None, limit=9999):
         if expansions is None:
             expansions = []
 
@@ -262,6 +272,77 @@ class TelegramInterface:
         for attribute in obj.__dict__:
             result[attribute] = self.cast_jsonable(obj.__dict__[attribute], __depth+1)
         return result
+
+    def flatten_to_csv(self, obj, delimiter='.'):
+        flat_obj = self.__flatten_object(obj, delimiter=delimiter)
+
+        data = []
+        data_row = {}
+        data_row_keys = []
+        data_row_last = None
+        line_number_previous = -1
+        for flat_key in flat_obj:
+            key = self.__flattened_key_parse(flat_key, method='key', delimiter=delimiter)
+            line_number = self.__flattened_key_parse(flat_key, method='line', delimiter=delimiter)
+            if line_number != line_number_previous:
+                if data_row:
+                    data.append(copy.copy(data_row))
+                line_number_previous = line_number
+            data_row[key] = flat_obj[flat_key]
+            if key not in data_row_keys:
+                data_row_keys.append(key)
+            data_row_last = data_row
+        data.append(copy.copy(data_row_last))
+
+        # return json.dumps(data, indent=2)
+
+        def __csv_row(list_items, char='"', end='\n'):
+            return char + '{char},{char}'.format(char=char).join(str(x) for x in list_items) + char + end
+
+        csv = __csv_row(data_row_keys)
+        for row in data:
+            row_list = []
+            for data_row_key in data_row_keys:
+                if data_row_key in row:
+                    row_list.append(row[data_row_key])
+                else:
+                    row_list.append('')
+            csv += __csv_row(row_list)
+        return csv.rstrip('\n')
+
+    def __flatten_object(self, obj, parent_key='', delimiter='.'):
+        items = []
+        if type(obj) is list:
+            for list_index, value in enumerate(obj):
+                new_key = '{}{}{}'.format(parent_key, delimiter, str(list_index)) if parent_key else str(list_index)
+                if type(value) in (str, int, float, bool):
+                    items.append((new_key, value))
+                else:
+                    items.extend(self.__flatten_object(value, new_key, delimiter=delimiter).items())
+        elif type(obj) is dict:
+            for key, value in obj.items():
+                new_key = '{}{}{}'.format(parent_key, delimiter, key) if parent_key else key
+                if type(value) in (str, int, float, bool) or value is None:
+                    items.append((new_key, value))
+                else:
+                    items.extend(self.__flatten_object(value, new_key, delimiter=delimiter).items())
+        else:
+            raise TelegramInterfaceException('Unsupported object type encountered while attempting to __flatten_object()')
+        return dict(items)
+
+    def __flattened_key_parse(self, flat_key, method='key', delimiter='.'):
+        if method.lower() == 'key':
+            key = ''
+            for flat_key_part in flat_key.split(delimiter):
+                if not flat_key_part.isdigit():
+                    key = '{}{}{}'.format(key, delimiter, flat_key_part) if key else flat_key_part
+            return key
+        else:
+            flat_key_part_numbers = []
+            for flat_key_part in flat_key.split(delimiter):
+                if flat_key_part.isdigit():
+                    flat_key_part_numbers.append(int(flat_key_part) + 1)
+            return reduce((lambda x, y: x * y), flat_key_part_numbers)
 
 
 TelegramInterface().main()
