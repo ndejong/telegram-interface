@@ -225,8 +225,11 @@ class TelegramInterface:
         return chat_channels
 
     def get_chat_users(self, chat_channel_object):
-        channel_users = self.telegram_client.get_participants(chat_channel_object)
-        return self.cast_jsonable(channel_users)
+        try:
+            channel_users = self.telegram_client.get_participants(chat_channel_object)
+            return self.cast_jsonable(channel_users)
+        except:
+            return list()
 
     def get_chats_by_attribute(self, attribute, limit=10):
         chats = []
