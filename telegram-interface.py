@@ -232,9 +232,6 @@ class TelegramInterface:
         except ChatAdminRequiredError:
             self.message_stderr('Failed get users from {}, admin privilege required'.format(chat_channel_object.title), color='red')
             return list()
-        except Exception as e:
-            self.message_stderr('Failed get users from {}, {}'.format(chat_channel_object.title, e), color='red')
-            return list()
 
 
     def get_chats_by_attribute(self, attribute, limit=10):
