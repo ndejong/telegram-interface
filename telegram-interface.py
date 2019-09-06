@@ -11,6 +11,7 @@ from functools import reduce
 from telethon.sync import TelegramClient
 from telethon.tl.types import InputPeerEmpty
 from telethon.tl.functions.messages import GetDialogsRequest
+from telethon.errors.rpcerrorlist import ChatAdminRequiredError
 
 
 class TelegramInterfaceException(Exception):
@@ -225,8 +226,13 @@ class TelegramInterface:
         return chat_channels
 
     def get_chat_users(self, chat_channel_object):
-        channel_users = self.telegram_client.get_participants(chat_channel_object)
-        return self.cast_jsonable(channel_users)
+        try:
+            channel_users = self.telegram_client.get_participants(chat_channel_object)
+            return self.cast_jsonable(channel_users)
+        except ChatAdminRequiredError:
+            self.message_stderr('Failed get users from {}, admin privilege required'.format(chat_channel_object.title), color='red')
+            return list()
+
 
     def get_chats_by_attribute(self, attribute, limit=10):
         chats = []
