@@ -1,0 +1,3 @@
+
+class TelegramInterfaceCLIException(Exception):
+    pass

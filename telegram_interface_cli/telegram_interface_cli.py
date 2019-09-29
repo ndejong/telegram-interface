@@ -1,145 +1,136 @@
-#!/usr/bin/env python3
 
 import os
-import sys
 import json
 import copy
 import datetime
-import argparse
 from functools import reduce
+
+from . import __name__
+from . import __version__
+
+from . import TelegramInterfaceCLIException
+from . import TelegramInterfaceCLILogger
+from . import TelegramInterfaceCLIConfig
 
 from telethon.sync import TelegramClient
 from telethon.tl.types import InputPeerEmpty
 from telethon.tl.functions.messages import GetDialogsRequest
 
 
-class TelegramInterfaceException(Exception):
-    pass
+class TelegramInterfaceCLI:
 
-
-class TelegramInterface:
-
-    args = None
-    name = 'Telegram Interface'
+    name = __name__
+    debug = None
+    output_format = None
+    output_filename = None
     telegram_client = None
+
+    telegram_api_id = None
+    telegram_api_hash = None
+    telegram_api_phone =None
+
     __chat_objects_by_id_hack = {}
 
-    def __init__(self):
-        parser = argparse.ArgumentParser(description=self.name)
+    def __init__(self, output_filename=None, output_format='json', debug=False):
 
-        parser.add_argument('-e', '--env', action='store_true', default=False,
-                            help='Output the current environment variable values and exit.')
+        if debug:
+            loglevel_env_override = '{}_LOGLEVEL'.format(__name__.replace('_', '').replace(' ', '').upper())
+            os.environ[loglevel_env_override] = 'debug'
 
-        parser.add_argument('-f', type=str, metavar='<filename>', default=None,
-                            help='Data filename to use, if the file already exists it will be loaded as input without '
-                                 'connecting to Telegram.  By default auto-generates a filename in the <cwd>.')
+        global logger
+        logger = TelegramInterfaceCLILogger().logger
+        logger.info(__name__)
+        logger.info('version {}'.format(__version__))
 
-        parser.add_argument('-o', type=str, metavar='<filename>', default='-',
-                            help='Output filename, by default to <stdout>')
+        global config, config_filename
+        try:
+            tgi_config = TelegramInterfaceCLIConfig()
+            config = tgi_config.config
+            config_filename = tgi_config.config_filename
+            logger.debug('config_filename: {}'.format(config_filename))
+        except TelegramInterfaceCLIException:
+            config = {}
 
-        parser.add_argument('-c', '--csv', action='store_true', default=False,
-                            help='Output in flattened CSV format')
+        self.telegram_api_id = os.environ.get('telegram_api_id', None)
+        if self.telegram_api_id is None:
+            if 'telegram_api_id' in config:
+                self.telegram_api_id = config['telegram_api_id']
+            else:
+                logger.fatal('Unable to set "telegram_api_id" value from env or config!')
+                exit(1)
 
-        parser.add_argument('-g', action='store_true', default=False,
-                            help='Output groups, can be used with -u to obtain users in groups')
+        self.telegram_api_hash = os.environ.get('telegram_api_hash', None)
+        if self.telegram_api_hash is None:
+            if 'telegram_api_hash' in config:
+                self.telegram_api_hash = config['telegram_api_hash']
+            else:
+                logger.fatal('Unable to set "telegram_api_hash" value from env or config!')
+                exit(1)
 
-        parser.add_argument('-u', action='store_true', default=False,
-                            help='Output users')
+        self.telegram_api_phone = os.environ.get('telegram_api_phone', None)
+        if self.telegram_api_phone is None:
+            if 'telegram_api_phone' in config:
+                self.telegram_api_phone = config['telegram_api_phone']
+            else:
+                logger.fatal('Unable to set "telegram_api_phone" value from env or config!')
+                exit(1)
 
-        self.args = parser.parse_args()
-        if self.args.env is False and self.args.g is False and self.args.u is False:
-            parser.print_help()
-            exit(1)
+        self.output_format = output_format
+        self.output_filename = output_filename
 
-    def main(self):
-        self.message_stderr(self.name, color='grey')
+        logger.debug('output_format: {}'.format(self.output_format))
+        logger.debug('output_filename: {}'.format(self.output_filename))
+        logger.debug('telegram_api_id: {}'.format(self.telegram_api_id))
+        logger.debug('telegram_api_hash: {}'.format(self.telegram_api_hash))
+        logger.debug('telegram_api_phone: {}'.format(self.telegram_api_phone))
 
-        if self.args.env is True:
-            self.output(self.get_environment_variables())
-            return
+    def main(self, data_filename=None, groups=False, users=False):
 
-        telegram_data_filename = self.args.f
-        if telegram_data_filename is None:
-            api_phone = self.get_environment_variables()['telegram_api_phone']
-            if not api_phone:
-                self.message_stderr('Environment variable "telegram_api_phone" not set!', color='red')
-                return
-            telegram_data_filename = '{}-{}.json'.format(api_phone, self.timestamp())
+        if data_filename is None:
+            ts = str(datetime.datetime.utcnow()).split('.')[0].replace(' ', 'Z').replace('-', '').replace(':', '')
+            data_filename = '{}-{}.json'.format(self.telegram_api_phone, ts)
 
-        telegram_data = None
-        if os.path.isfile(telegram_data_filename):
-            self.message_stderr('Loading data file: {}'.format(telegram_data_filename), color='grey')
-            with open(telegram_data_filename, 'r') as f:
+        if os.path.isfile(data_filename):
+            logger.info('Loading data file: {}'.format(data_filename))
+            with open(data_filename, 'r') as f:
                 telegram_data = json.load(f)
         else:
-            self.message_stderr('Saving to data file: {}'.format(telegram_data_filename), color='grey')
-            if self.connect_telegram() is False:
-                self.message_stderr('Failed connecting to Telegram', color='red')
+            logger.info('Saving to data file: {}'.format(data_filename))
+
+            session_filename = None
+            if 'session_filename' in config:
+                session_filename = config['session_filename']
+
+            if self.connect_telegram(session_filename=session_filename) is False:
+                logger.error('Failed connecting to Telegram')
                 return
-            telegram_data = {
-                'chat_groups': self.get_chat_groups(expansions=['users'])
-            }
-            with open(telegram_data_filename, 'w') as f:
+
+            telegram_data = {'chat_groups': self.get_chat_groups(expansions=['users'])}
+
+            with open(data_filename, 'w') as f:
                 json.dump(telegram_data, f)
 
-        output_data = None
-        if self.args.u is True and self.args.g is False:
+        if users is True and groups is False:
             output_data = self.extract_users(telegram_data)
-        elif self.args.u is False and self.args.g is True:
+        elif users is False and groups is True:
             output_data = self.extract_groups(telegram_data)
         else:
             output_data = self.extract_groups(telegram_data, users_expansion=True)
-
         self.output(output_data)
         return
 
-    def timestamp(self):
-        return str(datetime.datetime.utcnow()).split('.')[0].replace(' ', 'Z').replace('-', '').replace(':', '')
-
-    def get_environment_variables(self):
-        return {
-            'telegram_api_id': os.environ.get('telegram_api_id', None),
-            'telegram_api_hash': os.environ.get('telegram_api_hash', None),
-            'telegram_api_phone': os.environ.get('telegram_api_phone', None),
-        }
-
     def output(self, data):
-        if self.args.csv is True:
+        if self.output_format.lower() == 'csv':
             out = self.flatten_to_csv(data)
         else:
             out = json.dumps(data, indent=2)
 
-        if self.args.o == '-':
+        if self.output_filename == '-' or self.output_filename is None:
             print(out)
         else:
-            with open(self.args.o, 'w') as f:
+            with open(self.output_filename, 'w') as f:
                 f.write(out)
-            self.message_stderr('Output written to filename: {}'.format(self.args.o), color='grey')
-
-    def message_stderr(self, message, timestamp=True, color='default', end='\n'):
-
-        if color.lower() == 'red':
-            color_code = '\x1b[31m'
-        elif color.lower() == 'blue':
-            color_code = '\x1b[34m'
-        elif color.lower() == 'green':
-            color_code = '\x1b[32m'
-        elif color.lower() == 'yellow':
-            color_code = '\x1b[33m'
-        elif color.lower() in ['grey', 'gray']:
-            color_code = '\x1b[90m'
-        elif color.lower() == 'white':
-            color_code = '\x1b[97m'
-        else:
-            color_code = '\x1b[39m'
-
-        if timestamp:
-            message = '{} - {}'.format(self.timestamp(), message.strip())
-
-        color_default = '\x1b[0m'
-
-        sys.stderr.write(color_code + message + color_default + end)
-        return
+            logger.info('Output written to filename: {}'.format(self.output_filename))
 
     def extract_users(self, telegram_data):
         users_list = []
@@ -178,37 +169,24 @@ class TelegramInterface:
                     })
         return groups_list
 
-    def connect_telegram(self):
-        env = self.get_environment_variables()
+    def connect_telegram(self, session_filename=None):
 
-        if env['telegram_api_id']:
-            api_id = env['telegram_api_id']
+        if session_filename is None:
+            session_filename = '__CWD__/{}.session'.format(self.telegram_api_phone).replace('__CWD__', os.getcwd())
         else:
-            self.message_stderr('Environment variable "telegram_api_id" not set!', color='red')
-            return False
+            session_filename = os.path.expanduser(session_filename)
+        logger.info('Session filename: {}'.format(session_filename))
 
-        if env['telegram_api_hash']:
-            api_hash = env['telegram_api_hash']
-        else:
-            self.message_stderr('Environment variable "telegram_api_hash" not set!', color='red')
-            return False
-
-        if env['telegram_api_phone']:
-            api_phone = env['telegram_api_phone']
-        else:
-            self.message_stderr('Environment variable "telegram_api_phone" not set!', color='red')
-            return False
-
-        self.telegram_client = TelegramClient(api_phone, api_id, api_hash)
-
+        self.telegram_client = TelegramClient(session_filename, self.telegram_api_id, self.telegram_api_hash)
         self.telegram_client.connect()
+
         if not self.telegram_client.is_user_authorized():
-            self.telegram_client.send_code_request(os.environ.get('telegram_api_phone'))
+            self.telegram_client.send_code_request(self.telegram_api_phone)
             self.telegram_client.sign_in(
-                os.environ.get('telegram_api_phone'),
+                self.telegram_api_phone,
                 input('Enter the MFA code provided to you in the Telegram application: ')
             )
-        self.message_stderr('Connected to Telegram with api_id: {}'.format(api_id), color='grey')
+        logger.info('Connected to Telegram with telegram_api_id: {}'.format(self.telegram_api_id))
         return True
 
     def get_chat_groups(self, expansions=None, limit=9999):
@@ -327,7 +305,7 @@ class TelegramInterface:
                 else:
                     items.extend(self.__flatten_object(value, new_key, delimiter=delimiter).items())
         else:
-            raise TelegramInterfaceException('Unsupported object type encountered while attempting to __flatten_object()')
+            raise TelegramInterfaceCLIException('Unsupported object type encountered while attempting to __flatten_object()')
         return dict(items)
 
     def __flattened_key_parse(self, flat_key, method='key', delimiter='.'):
@@ -343,6 +321,3 @@ class TelegramInterface:
                 if flat_key_part.isdigit():
                     flat_key_part_numbers.append(int(flat_key_part) + 1)
             return reduce((lambda x, y: x * y), flat_key_part_numbers)
-
-
-TelegramInterface().main()
