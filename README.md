@@ -1,22 +1,79 @@
 # Telegram Interface
 
+[![PyPi](https://img.shields.io/pypi/v/telegram-interface.svg)](https://pypi.org/project/telegram-interface/)
+[![Build Status](https://api.travis-ci.org/ndejong/telegram-interface.svg?branch=master)](https://api.travis-ci.org/ndejong/telegram-interface)
+
 A quick tool for listing the Telegram Messenger groups that a user-account is invited into and
 listing the users within groups.
 
-### Github
+## Project
 * [github.com/ndejong/telegram-interface](https://github.com/ndejong/telegram-interface)
 
-### Prerequisites
+## Install
+#### via PyPi
+```bash
+pip3 install telegram-interface
+```
+
+#### via Source
+```bash
+git clone https://github.com:ndejong/telegram-interface
+cd telegram-interface
+python3 -m venv venv
+./venv/bin/activate
+pip3 install -r requirements.txt
+```
+
+## Prerequisites
 * A [Telegram Messenger](https://telegram.org/) account invited into one or more group chat channels.
 * Setup API credentials on the Telegram Messenger account [core.telegram.org/api/obtaining_api_id](https://core.telegram.org/api/obtaining_api_id)
 
-### Environment Variables
-The following environment variables must be set with their associated values:-
-* `telegram_api_id`
-* `telegram_api_hash`
-* `telegram_api_phone`
+## Configuration
 
-### Outputs
+Configuration is via a YAML format as per the following example
+```yaml
+
+---
+
+telegram_interface_cli:
+
+#
+#  api_id: env:telegram_api_id
+#  api_hash: env:telegram_api_hash
+#  api_phone: env:telegram_api_phone
+#
+
+  api_id: '123456'
+  api_hash: '0123456789abcdef0123456789abcdef'
+  api_phone: '12125551234'
+
+  session_filename: '~/.telegram.session'
+
+```
+
+Loading environment variables into the configuration file is possible using the env name with an 
+`env:` prefix, for example
+```yaml
+  api_id: env:telegram_api_id
+``` 
+In this case the `api_id` value is loaded loaded from the `telegram_api_id` env value.
+
+#### Configuration file location
+The following file location are checked for the configuration file if the `TELEGRAMINTERFACECLI_CONFIG_FILENAME` env value is not set.
+```text
+    __CWD__/telegram_interface_cli.yml
+    __CWD__/telegram_interface_cli.yaml
+    __CWD__/telegram-interface.yml
+    __CWD__/telegram-interface.yaml
+    ~/.telegram-interface
+    /etc/telegram-interface/telegram-interface.yml
+    /etc/telegram-interface/telegram-interface.yaml
+```
+
+#### Environment Variables
+* `TELEGRAMINTERFACECLI_CONFIG_FILENAME` - configuration file override.
+
+## Outputs
 By default output is in JSON data-structures making it easier to chain with other tools such as `jq` for further parsing 
 and filtering if required.
 
@@ -24,62 +81,34 @@ Additionally, CSV outputs are possible using the `--csv` argument.
 
 Log status messages are sent to stderr and do not get in the way of pipe style tool chaining.
 
-#### Example: List groups names using `jq` to filter output
-```commandline
-telegram-interface.py -g | jq .[].name 
-20190804Z085638 - Telegram Interface
-20190804Z085638 - Saving to data file: +000000000000-20190804Z072817.json
-20190804Z085638 - Connected to Telegram with api_id: 12345
-"Awesome Group A"
-"Another Group"
-"A Chat Forum"
-...
-```
-
-#### Example: List groups names using `--csv` argument. 
-```commandline
-telegram-interface.py -g -c
-20190804Z085638 - Telegram Interface
-20190804Z085638 - Saving to data file: +000000000000-20190804Z072817.json
-20190804Z085638 - Connected to Telegram with api_id: 12345
-"id","name"
-"1115000000","Awesome Group A"
-"1020000000","Another Group"
-"110090000","A Chat Forum"
-...
-```
-
-
-#### Example: List members of all groups using the `--csv` argument from previous datafile.
-```commandline
-telegram-interface.py -f +000000000000-20190804Z072817.json -u -g -c
-20190804Z145459 - Telegram Interface
-20190804Z145459 - Loading data file: +000000000000-20190804Z072817.json
-"id","name","users.id","users.username","users.firstname","users.lastname"
-"1115000000","Awesome Group A","977000000","user_one","User","One"
-"1115000000","Awesome Group A","190000000","someotheruser","Some","Other User"
-"1115000000","Awesome Group A","790000000","awesomeuser","Awesome","User"
-...
-```
 
 
 ### Usage
 ```
-usage: telegram-interface.py [-h] [-e] [-f <filename>] [-o <filename>] [-c]
-                             [-g] [-u]
+$ telegram-interface --help
+usage: telegram-interface [-h] [-f <filename>] [-o <filename>] [-c] [-g] [-u]
+                          [-C <filename>] [-d]
 
-Telegram Interface
+Telegram Interface v0.1.1
 
 optional arguments:
   -h, --help     show this help message and exit
-  -e, --env      Output the current environment variable values and exit.
-  -f <filename>  Data filename to use, if the file already exists it will be
-                 loaded as input without connecting to Telegram. By default
-                 auto-generates a filename in the <cwd>.
-  -o <filename>  Output filename, by default to <stdout>
-  -c, --csv      Output in flattened CSV format
-  -g             Output groups, can be used with -u to obtain users in groups
-  -u             Output users
+  -f <filename>  Data filename to use. If the file already exists it will be
+                 loaded as input without connecting to Telegram, thus allowing
+                 a reload of a previous run. By default a filename is auto-
+                 generated in the <cwd>.
+  -o <filename>  Output filename, by default to <stdout>.
+  -c, --csv      Output in flattened CSV format.
+  -g, --group    Output names of groups that the Telegram user is a member of,
+                 combine with -u to obtain the users within these groups.
+  -u, --user     Output names of the users that the Telegram user has
+                 visibility on.
+  -C <filename>  Override the configuration file to read, else search for
+                 telegram-interface.yml in common paths.
+  -d, --debug    Debug level logging output (default: False).
+
+A quick tool for listing the Telegram Messenger groups that a user-account is
+invited into and listing the users within groups.
 ```
 
 ****
