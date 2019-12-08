@@ -61,18 +61,6 @@ Loading environment variables into the configuration file is possible using the 
 ``` 
 In this case the `api_id` value is loaded loaded from the `telegram_api_id` env value.
 
-#### Configuration file location
-The following file location are checked for the configuration file if the `TELEGRAMINTERFACECLI_CONFIG_FILENAME` env value is not set.
-```text
-    __CWD__/telegram_interface_cli.yml
-    __CWD__/telegram_interface_cli.yaml
-    __CWD__/telegram-interface.yml
-    __CWD__/telegram-interface.yaml
-    ~/.telegram-interface
-    /etc/telegram-interface/telegram-interface.yml
-    /etc/telegram-interface/telegram-interface.yaml
-```
-
 #### Environment Variables
 * `TELEGRAMINTERFACECLI_CONFIG_FILENAME` - configuration file override.
 
@@ -88,27 +76,25 @@ Log status messages are sent to stderr and do not get in the way of pipe style t
 
 ### Usage
 ```
-$ telegram-interface --help
-usage: telegram-interface [-h] [-f <filename>] [-o <filename>] [-c] [-g] [-u]
-                          [-C <filename>] [-d]
+usage: telegram-interface [-h] [-c <filename>] [-f <filename>] [-o <filename>]
+                          [-g] [-u] [--csv] [-d]
 
-Telegram Interface v0.1.1
+Telegram Interface v0.1.4
 
 optional arguments:
   -h, --help     show this help message and exit
-  -f <filename>  Data filename to use. If the file already exists it will be
-                 loaded as input without connecting to Telegram, thus allowing
-                 a reload of a previous run. By default a filename is auto-
-                 generated in the <cwd>.
-  -o <filename>  Output filename, by default to <stdout>.
-  -c, --csv      Output in flattened CSV format.
+  -c <filename>  Configuration file to use (required)
+  -f <filename>  Data filename to use. If the data-file already exists it will
+                 be loaded as input without connecting to Telegram thus
+                 allowing a reload of a previous run. By default a filename is
+                 auto-generated in the current-working-directory.
+  -o <filename>  Output filename, by default output is sent to <stdout>.
   -g, --group    Output names of groups that the Telegram user is a member of,
                  combine with -u to obtain the users within these groups.
   -u, --user     Output names of the users that the Telegram user has
                  visibility on.
-  -C <filename>  Override the configuration file to read, else search for
-                 telegram-interface.yml in common paths.
-  -d, --debug    Debug level logging output (default: False).
+  --csv          Output in flattened CSV format.
+  -d, --debug    Debug level logging output.
 
 A quick tool for listing the Telegram Messenger groups that a user-account is
 invited into and listing the users within groups.
