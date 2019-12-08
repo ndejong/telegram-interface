@@ -48,32 +48,29 @@ class TelegramInterfaceCLI:
             config = tgi_config.config
             logger.debug('config_filename: {}'.format(tgi_config.config_filename))
         except TelegramInterfaceCLIException as e:
-            logger.fatal(e)
-            exit(1)
+            logger.warn(e)
+            config = {}
 
         self.telegram_api_id = os.environ.get('telegram_api_id', None)
         if self.telegram_api_id is None:
             if 'telegram_api_id' in config:
                 self.telegram_api_id = config['telegram_api_id']
             else:
-                logger.fatal('Unable to set "telegram_api_id" value from env or config!')
-                exit(1)
+                logger.warn('Unable to set "telegram_api_id" value from env or config!')
 
         self.telegram_api_hash = os.environ.get('telegram_api_hash', None)
         if self.telegram_api_hash is None:
             if 'telegram_api_hash' in config:
                 self.telegram_api_hash = config['telegram_api_hash']
             else:
-                logger.fatal('Unable to set "telegram_api_hash" value from env or config!')
-                exit(1)
+                logger.warn('Unable to set "telegram_api_hash" value from env or config!')
 
         self.telegram_api_phone = os.environ.get('telegram_api_phone', None)
         if self.telegram_api_phone is None:
             if 'telegram_api_phone' in config:
                 self.telegram_api_phone = config['telegram_api_phone']
             else:
-                logger.fatal('Unable to set "telegram_api_phone" value from env or config!')
-                exit(1)
+                logger.warn('Unable to set "telegram_api_phone" value from env or config!')
 
         self.output_format = output_format
         self.output_filename = output_filename
@@ -101,7 +98,13 @@ class TelegramInterfaceCLI:
             if 'session_filename' in config:
                 session_filename = config['session_filename']
 
-            if self.connect_telegram(session_filename=session_filename) is False:
+            try:
+                connect_telegram = self.connect_telegram(session_filename=session_filename)
+            except ValueError as e:
+                logger.error(e)
+                return
+
+            if connect_telegram is False:
                 logger.error('Failed connecting to Telegram')
                 return
 
@@ -156,6 +159,7 @@ class TelegramInterfaceCLI:
                             'username': user['username'],
                             'firstname': user['first_name'],
                             'lastname': user['last_name'],
+                            'phone': user['phone'],
                         })
                     groups_list.append({
                         'id': chat_group['id'],
