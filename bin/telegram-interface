@@ -6,7 +6,7 @@ import telegram_interface_cli
 
 
 parser = argparse.ArgumentParser(
-    description='Telegram Interface v{}'.format(telegram_interface_cli.__version__),
+    description='Telegram Interface v{}'.format(telegram_interface_cli.VERSION),
     # add_help=False,
     epilog="""
         A quick tool for listing the Telegram Messenger groups that a user-account is invited into and listing 
@@ -15,16 +15,16 @@ parser = argparse.ArgumentParser(
 )
 
 
+parser.add_argument('-c', type=str, metavar='<filename>', default=None,
+                    help='Configuration file to use (required)')
+
 parser.add_argument('-f', type=str, metavar='<filename>', default=None,
-                    help='Data filename to use.  If the file already exists it will be loaded as input without '
-                         'connecting to Telegram, thus allowing a reload of a previous run.  By default a filename '
-                         'is auto-generated in the <cwd>.')
+                    help='Data filename to use.  If the data-file already exists it will be loaded as input without '
+                         'connecting to Telegram thus allowing a reload of a previous run.  By default a filename '
+                         'is auto-generated in the current-working-directory.')
 
 parser.add_argument('-o', type=str, metavar='<filename>', default='-',
-                    help='Output filename, by default to <stdout>.')
-
-parser.add_argument('-c', '--csv', action='store_true', default=False,
-                    help='Output in flattened CSV format.')
+                    help='Output filename, by default output is sent to <stdout>.')
 
 parser.add_argument('-g', '--group', action='store_true', default=False,
                     help='Output names of groups that the Telegram user is a member of, combine with -u to obtain the '
@@ -33,26 +33,19 @@ parser.add_argument('-g', '--group', action='store_true', default=False,
 parser.add_argument('-u', '--user', action='store_true', default=False,
                     help='Output names of the users that the Telegram user has visibility on.')
 
-parser.add_argument('-C', type=str, metavar='<filename>', default=None,
-                    help='Override the configuration file to read, else search for telegram-interface.yml in '
-                         'common paths.')
+parser.add_argument('--csv', action='store_true', default=False,
+                    help='Output in flattened CSV format.')
 
 parser.add_argument('-d', '--debug', action='store_true', default=False,
-                    help='Debug level logging output (default: False).')
+                    help='Debug level logging output.')
 
 
 args = parser.parse_args()
 
 
-if args.C is not None:
-    config_filename_env_override = '{}_CONFIG_FILENAME'.format(
-        telegram_interface_cli.__name__.replace('_', '').replace(' ', '').upper()
-    )
-    os.environ[config_filename_env_override] = args.C
-
-
 if __name__ == '__main__':
     telegram_interface_cli.TelegramInterfaceCLI(
+        config_filename = args.c,
         output_filename=args.o,
         output_format='json' if args.csv is False else 'csv',
         debug=args.debug

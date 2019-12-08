@@ -2,7 +2,7 @@
 import os
 import yaml
 
-from . import __name__
+from . import NAME
 from . import TelegramInterfaceCLIException
 
 
@@ -10,40 +10,21 @@ class TelegramInterfaceCLIConfig:
 
     debug = False
     config = None
-    config_root = __name__
+    config_root = NAME
     config_filename = None
 
-    def __init__(self, config_filename_env_override=None):
+    def __init__(self, config_filename=None):
 
-        if config_filename_env_override is None:
-            config_filename_env_override = '{}_CONFIG_FILENAME'.format(__name__.replace('_', '').replace(' ', '').upper())
+        if config_filename is None:
+            config_filename = os.getenv('TELEGRAMINTERFACECLI_CONFIG_FILENAME')
 
-        if os.getenv(config_filename_env_override) is not None:
-            self.config_filename = os.path.expanduser(os.getenv(config_filename_env_override))
+        config_filename = os.path.expanduser(config_filename)
 
-        if self.config_filename is None:
-            self.config_filename = self.__find_config()
+        if config_filename is None or not os.path.isfile(config_filename):
+            raise TelegramInterfaceCLIException('Unable to locate configuration file: {}'.format(config_filename))
 
-        if self.config_filename is None or not os.path.isfile(self.config_filename):
-            raise TelegramInterfaceCLIException('Unable to locate configuration file',self.config_filename)
-
-        self.config = self.__load_config(self.config_filename)
-
-    def __find_config(self):
-        candidate_paths = [
-            '__CWD__/telegram_interface_cli.yml',
-            '__CWD__/telegram_interface_cli.yaml',
-            '__CWD__/telegram-interface.yml',
-            '__CWD__/telegram-interface.yaml',
-            '~/.telegram-interface',
-            '/etc/telegram-interface/telegram-interface.yml',
-            '/etc/telegram-interface/telegram-interface.yaml',
-        ]
-        for candidate_path in candidate_paths:
-            path = os.path.expanduser(candidate_path.replace('__CWD__', os.getcwd()))
-            if os.path.exists(path):
-                return path
-        return None
+        self.config = self.__load_config(config_filename)
+        self.config_filename = config_filename
 
     def __load_config(self, config_filename):
         loaded_config = {}

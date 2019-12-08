@@ -10,4 +10,8 @@ install:
   - pip install -e .
 
 script:
-  - pytest
+  - python setup.py clean build
+  - python setup.py test
+  - python setup.py install
+  - which telegram-interface
+  - telegram-interface

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
 from setuptools import setup, find_packages
-from telegram_interface_cli import __name__
-from telegram_interface_cli import __version__
+from telegram_interface_cli import NAME
+from telegram_interface_cli import VERSION
 
 with open('README.md', 'r') as f:
     long_description = f.read()
 
 setup(
-    name=__name__.replace('_','-'),
-    version=__version__,
+    name=NAME.replace('_','-'),
+    version=VERSION,
     description='A quick tool for listing the Telegram Messenger groups that a user is within.',
 
     long_description=long_description,

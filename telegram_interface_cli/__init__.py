@@ -1,6 +1,6 @@
 
-from .__name__ import __name__
-from .__version__ import __version__
+from .__name__ import NAME
+from .__version__ import VERSION
 
 from .exceptions import TelegramInterfaceCLIException
 from .logger import TelegramInterfaceCLILogger

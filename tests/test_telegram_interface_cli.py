@@ -7,11 +7,11 @@ import telegram_interface_cli
 
 
 def test_version_exist():
-    assert telegram_interface_cli.__version__ is not None
+    assert telegram_interface_cli.VERSION is not None
 
 
 def test_name_exist():
-    assert telegram_interface_cli.__name__ is not None
+    assert telegram_interface_cli.NAME is not None
 
 
 def test_telegram_interface_cli_init():

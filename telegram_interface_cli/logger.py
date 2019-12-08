@@ -3,7 +3,7 @@ import os
 import time
 import logging
 
-from . import __name__
+from . import NAME
 from . import TelegramInterfaceCLIException
 
 
@@ -47,7 +47,7 @@ class TelegramInterfaceCLILogger:
     def __init__(self, level=None, level_env_override=None):
 
         if level_env_override is None:
-            level_env_override = '{}_LOGLEVEL'.format(__name__.replace('_', '').replace(' ', '').upper())
+            level_env_override = '{}_LOGLEVEL'.format(NAME.replace('_', '').replace(' ', '').upper())
 
         if os.getenv(level_env_override) is not None:
             log_level = os.getenv(level_env_override)
@@ -56,7 +56,7 @@ class TelegramInterfaceCLILogger:
         else:
             log_level = self.default_level
 
-        logger_init = logging.getLogger(__name__)
+        logger_init = logging.getLogger(NAME)
         if logger_init.level > 0:
             self.logger = logger_init
             return

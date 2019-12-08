@@ -1,2 +1,2 @@
 
-__name__ = 'telegram_interface_cli'
+NAME='telegram_interface_cli'

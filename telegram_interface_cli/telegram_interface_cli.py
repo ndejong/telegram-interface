@@ -5,8 +5,8 @@ import copy
 import datetime
 from functools import reduce
 
-from . import __name__
-from . import __version__
+from . import NAME
+from . import VERSION
 
 from . import TelegramInterfaceCLIException
 from . import TelegramInterfaceCLILogger
@@ -20,7 +20,6 @@ from telethon.errors.rpcerrorlist import ChatAdminRequiredError
 
 class TelegramInterfaceCLI:
 
-    name = __name__
     debug = None
     output_format = None
     output_filename = None
@@ -32,25 +31,25 @@ class TelegramInterfaceCLI:
 
     __chat_objects_by_id_hack = {}
 
-    def __init__(self, output_filename=None, output_format='json', debug=False):
+    def __init__(self, config_filename, output_filename=None, output_format='json', debug=False):
 
         if debug:
-            loglevel_env_override = '{}_LOGLEVEL'.format(__name__.replace('_', '').replace(' ', '').upper())
+            loglevel_env_override = '{}_LOGLEVEL'.format(NAME.replace('_', '').replace(' ', '').upper())
             os.environ[loglevel_env_override] = 'debug'
 
         global logger
         logger = TelegramInterfaceCLILogger().logger
-        logger.info(__name__)
-        logger.info('version {}'.format(__version__))
+        logger.info(NAME)
+        logger.info('version {}'.format(VERSION))
 
-        global config, config_filename
+        global config
         try:
-            tgi_config = TelegramInterfaceCLIConfig()
+            tgi_config = TelegramInterfaceCLIConfig(config_filename)
             config = tgi_config.config
-            config_filename = tgi_config.config_filename
-            logger.debug('config_filename: {}'.format(config_filename))
-        except TelegramInterfaceCLIException:
-            config = {}
+            logger.debug('config_filename: {}'.format(tgi_config.config_filename))
+        except TelegramInterfaceCLIException as e:
+            logger.fatal(e)
+            exit(1)
 
         self.telegram_api_id = os.environ.get('telegram_api_id', None)
         if self.telegram_api_id is None:
@@ -207,8 +206,8 @@ class TelegramInterfaceCLI:
         try:
             channel_users = self.telegram_client.get_participants(chat_channel_object)
             return self.cast_jsonable(channel_users)
-        except ChatAdminRequiredError:
-            self.message_stderr('Failed get users from {}, admin privilege required'.format(chat_channel_object.title), color='red')
+        except ChatAdminRequiredError as e:
+            logger.warn('Failed get users from {}, admin privilege required'.format(chat_channel_object.title))
             return list()
 
 
