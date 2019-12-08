@@ -18,10 +18,10 @@ class TelegramInterfaceCLIConfig:
         if config_filename is None:
             config_filename = os.getenv('TELEGRAMINTERFACECLI_CONFIG_FILENAME')
 
-        config_filename = os.path.expanduser(config_filename)
-
         if config_filename is None or not os.path.isfile(config_filename):
             raise TelegramInterfaceCLIException('Unable to locate configuration file: {}'.format(config_filename))
+
+        config_filename = os.path.expanduser(config_filename)
 
         self.config = self.__load_config(config_filename)
         self.config_filename = config_filename
