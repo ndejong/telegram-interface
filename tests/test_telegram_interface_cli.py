@@ -16,8 +16,7 @@ def test_name_exist():
 
 def test_telegram_interface_cli_init():
     config_filename = __faux_config_file()
-    os.environ['TELEGRAMINTERFACECLI_CONFIG_FILENAME'] = config_filename
-    x = telegram_interface_cli.TelegramInterfaceCLI(debug=True)
+    x = telegram_interface_cli.TelegramInterfaceCLI(config_filename=config_filename, debug=True)
     os.unlink(config_filename)
     assert x is not None
 
