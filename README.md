@@ -1,8 +1,8 @@
 # Telegram Interface
 
 [![PyPi](https://img.shields.io/pypi/v/telegram-interface-cli.svg)](https://pypi.python.org/pypi/telegram-interface-cli/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/telegram-interface-cli.svg)](https://github.com/ndejong/telegram-interface)
-[![Build Status](https://api.travis-ci.org/ndejong/telegram-interface.svg?branch=master)](https://travis-ci.org/ndejong/telegram-interface)
+[![Python Versions](https://img.shields.io/pypi/pyversions/telegram-interface-cli.svg)](https://github.com/ndejong/telegram-interface/)
+[![Build Status](https://api.travis-ci.org/ndejong/telegram-interface.svg?branch=master)](https://travis-ci.org/ndejong/telegram-interface/)
 
 A quick tool for listing the Telegram Messenger groups that a user-account is invited into and
 listing the users within groups.
