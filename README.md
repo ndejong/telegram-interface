@@ -1,6 +1,7 @@
 # Telegram Interface
 
-[![PyPi](https://img.shields.io/pypi/v/telegram-interface-cli.svg)](https://pypi.org/project/telegram-interface-cli/)
+[![PyPi](https://img.shields.io/pypi/v/telegram-interface-cli.svg)](https://pypi.python.org/pypi/telegram-interface-cli/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/telegram-interface-cli.svg)](https://github.com/ndejong/telegram-interface)
 [![Build Status](https://api.travis-ci.org/ndejong/telegram-interface.svg?branch=master)](https://travis-ci.org/ndejong/telegram-interface)
 
 A quick tool for listing the Telegram Messenger groups that a user-account is invited into and
@@ -79,7 +80,7 @@ Log status messages are sent to stderr and do not get in the way of pipe style t
 usage: telegram-interface [-h] [-c <filename>] [-f <filename>] [-o <filename>]
                           [-g] [-u] [--csv] [-d]
 
-Telegram Interface v0.1.4
+Telegram Interface v0.1.7
 
 optional arguments:
   -h, --help     show this help message and exit
