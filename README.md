@@ -1,7 +1,7 @@
 # Telegram Interface
 
 [![PyPi](https://img.shields.io/pypi/v/telegram-interface-cli.svg)](https://pypi.org/project/telegram-interface-cli/)
-[![Build Status](https://api.travis-ci.org/ndejong/telegram-interface.svg?branch=master)](https://api.travis-ci.org/ndejong/telegram-interface)
+[![Build Status](https://api.travis-ci.org/ndejong/telegram-interface.svg?branch=master)](https://travis-ci.org/ndejong/telegram-interface)
 
 A quick tool for listing the Telegram Messenger groups that a user-account is invited into and
 listing the users within groups.
@@ -20,8 +20,11 @@ pip3 install telegram-interface-cli
 git clone https://github.com:ndejong/telegram-interface
 cd telegram-interface
 python3 -m venv venv
-./venv/bin/activate
+source venv/bin/activate
 pip3 install -r requirements.txt
+python3 setup.py clean
+python3 setup.py test
+python3 setup.py install
 ```
 
 ## Prerequisites
